@@ -83,3 +83,52 @@ namespace CRUDMahasiswaADO
                 MessageBox.Show("Gagal load data: " + ex.Message);
             }
         }
+
+        private void btn_Load_Click(object sender, EventArgs e)
+        {
+            button = 1;
+            loadDataChart();
+        }
+
+        private void btn_Reset_Click(object sender, EventArgs e)
+        {
+            button = 0;
+            loadDataChart();
+        }
+
+        private void btn_DataMahasiswa_Click(object sender, EventArgs e)
+        {
+            Form1 frm1 = new Form1();
+            frm1.Show();
+            this.Hide();
+        }
+
+        private void cbo_Filter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboFilter.SelectedIndex == 0) // Keseluruhan
+            {
+                dtpTahunMasuk.Enabled = false;
+                btnLoad.Enabled = false;
+                button = 0;
+                loadDataChart();
+            }
+            else if (cboFilter.SelectedIndex == 1) // Berdasarkan Tahun
+            {
+                dtpTahunMasuk.Enabled = true;
+                btnLoad.Enabled = true;
+                button = 1;
+                loadDataChart();
+            }
+        }
+
+        private void dtp_TahunMasuk_ValueChanged(object sender, EventArgs e)
+        {
+            // Kosong - event handler untuk DateTimePicker
+        }
+
+        private void chartMahasiswa_Click(object sender, EventArgs e)
+        {
+            // Kosong - event handler untuk Chart
+        }
+    }
+}
