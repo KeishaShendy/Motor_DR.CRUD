@@ -47,4 +47,7 @@ namespace CRUDMahasiswaADO
                 da = new SqlDataAdapter(cmd);
 
                 dtMahasiswa = new DataTable();
-  
+                da.Fill(dtMahasiswa);
+
+    }
+}
