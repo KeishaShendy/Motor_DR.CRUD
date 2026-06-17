@@ -382,3 +382,182 @@ namespace CRUDMahasiswaADO
                 MessageBox.Show("General Error :" + ex.Message);
             }
         }
+
+        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                DataRow row = ((DataRowView)mahasiswaBindingSource[e.RowIndex]).Row;
+
+                txtNIM.Text = row[0].ToString();
+                txtNama.Text = row[1].ToString();
+                cmbJK.Text = row[2].ToString();
+                dtpTanggalLahir.Value = Convert.ToDateTime(row[3]);
+                txtAlamat.Text = row[4].ToString();
+                txtKodeProdi.Text = row[6].ToString();
+
+                if (row[5] != DBNull.Value)
+                {
+                    byte[] imgBytes = (byte[])row[5];
+                    using (MemoryStream ms = new MemoryStream(imgBytes))
+                    {
+                        pictureBox1.Image = Image.FromStream(ms);
+                        pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+                    }
+                }
+                else
+                {
+                    pictureBox1.Image = null;
+                }
+
+                txtNIM.Enabled = false;
+            }
+        }
+
+        private void btnResetData_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                DialogResult resultConfirm = MessageBox.Show(
+                    "Yakin ingin reset data dari backup?",
+                    "Konfirmasi Reset",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (resultConfirm == DialogResult.Yes)
+                {
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    {
+                        conn.Open();
+
+                        string query = @"
+                            IF OBJECT_ID('dbo.Mahasiswa_Backup') IS NOT NULL
+                            BEGIN
+                                DELETE FROM dbo.Mahasiswa;
+                                INSERT INTO dbo.Mahasiswa
+                                SELECT * FROM dbo.Mahasiswa_Backup;
+                            END";
+
+                        using (SqlCommand cmd = new SqlCommand(query, conn))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    MessageBox.Show("Data berhasil direset");
+                    ClearForm();
+                    LoadData();
+                }
+            }
+            catch (Exception ex)
+            {
+                simpanLog(ex.Message);
+                MessageBox.Show("Reset gagal: " + ex.Message);
+            }
+        }
+
+        private void btnTestInjection_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    string query = "UPDATE Mahasiswa SET Nama='" + txtNama.Text + "' WHERE NIM='" + txtNIM.Text + "'";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        int result = cmd.ExecuteNonQuery();
+                        MessageBox.Show(result + " baris terupdate");
+                    }
+                }
+
+                LoadData();
+            }
+            catch (SqlException ex)
+            {
+                if (ex.Message.Contains("safe"))
+                {
+                    simpanLog(ex.Message);
+                    MessageBox.Show("SQL Error : Unsafe UPDATE operation not allowed");
+                }
+                else
+                {
+                    simpanLog(ex.Message);
+                    MessageBox.Show("SQL Error :" + ex.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                simpanLog(ex.Message);
+                MessageBox.Show("General Error :" + ex.Message);
+            }
+        }
+
+        private void lbsTotal_Click(object sender, EventArgs e)
+        {
+            // Tetap dikosongkan jika tidak dipakai
+        }
+
+        private void btnRekapData_Click(object sender, EventArgs e)
+        {
+            // Memanggil Form 3 (Filter) milik kamu
+            frmRekapMahasiswa_Load fm3 = new frmRekapMahasiswa_Load();
+            fm3.Show();
+            this.Hide();
+        }
+
+        private void btnUpload_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp";
+
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                pictureBox1.Image = Image.FromFile(ofd.FileName);
+                pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            }
+        }
+
+        private void btnRefresh_Click(object sender, EventArgs e)
+        {
+            LoadData();
+        }
+
+        private void btnImportExcel_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog { Filter = "Excel Workbook|*.xlsx" })
+            {
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string filePath = openFileDialog.FileName;
+                    using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+                    {
+                        using (var reader = ExcelReaderFactory.CreateReader(stream))
+                        {
+                            var result = reader.AsDataSet(new ExcelDataSetConfiguration()
+                            {
+                                ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                                {
+                                    UseHeaderRow = true
+                                }
+                            });
+
+                            DataTable dt = result.Tables[0];
+                            dataGridView1.DataSource = dt;
+                            dataGridView1.Enabled = false;
+                            btnImportDatabase.Enabled = true;
+                            btnInsert.Enabled = false;
+                            btnUpdate.Enabled = false;
+                            btnDelete.Enabled = false;
+                            btnCari.Enabled = false;
+                            btnLoad.Enabled = false;
+                            btnResetData.Enabled = false;
+                            btnTestInjection.Enabled = false;
+                        }
+                    }
+                }
+            }
+        }
