@@ -5,172 +5,266 @@ using System.Windows.Forms;
 
 namespace CRUDMahasiswaADO
 {
-    class DAL
+    public class DAL
     {
-        private SqlConnection conn;
-        private SqlCommand cmd;
-        private SqlDataAdapter da;
-        private DataSet ds;
+        // ============================================
+        // GET LOCAL IP ADDRESS - SESUAI MODUL
+        // ============================================
+        public static string GetLocalIPAddress()
+        {
+            string localIP = string.Empty;
+            try
+            {
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        localIP = ip.ToString();
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error getting local IP address: " + ex.Message);
+            }
+            return localIP;
+        }
 
-        // Constructor: Tempat menaruh Connection String Anda
+        // ============================================
+        // GET CONNECTION STRING - SESUAI MODUL
+        // ============================================
+        public static string GetConnectionString()
+        {
+            string connectionString = $"Data Source={GetLocalIPAddress()};Initial Catalog=DBAkademikADO;User ID=sa;Password=PasswordSA;";
+            return connectionString;
+        }
+
+        // ============================================
+        // CONNECTION STRING - HARDCODE (UNTUK DEMO)
+        // ============================================
+        // ✅ PAKAI INI UNTUK DEMO (PASTI BERHASIL)
+        private readonly string connectionString = "Data Source=LAPTOP-MBD0B33T\\SHENDY;Initial Catalog=DBAkademikADO;User ID=sa;Password=Password123";
+
+        // ❌ COMMENT INI DULU (PAKAI IP OTOMATIS)
+        // private readonly string connectionString = GetConnectionString();
+
+        private SqlConnection conn;
+        private SqlDataAdapter da;
+        private DataTable dtMahasiswa;
+
         public DAL()
         {
-            conn = new SqlConnection("Data Source=LAPTOP-MBD0B33T\\SHENDY;Initial Catalog=DBAkademikADO;User ID=sa;Password=Password123");
+            conn = new SqlConnection(connectionString);
         }
 
-        // Fungsi Read (Gambar 1)
-        public DataSet GetMhs()
-        {
-            ds = new DataSet();
-            try
-            {
-                conn.Open();
-                cmd = new SqlCommand("sp_GetMahasiswa", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                da = new SqlDataAdapter(cmd);
-                da.Fill(ds, "Mahasiswa");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            finally
-            {
-                conn.Close();
-            }
-            return ds;
-        }
-
-        // Fungsi Insert (Gambar 2 & 3)
-        public void InsertMhs(string NIM, string Nama, string Alamat, string JenisKelamin, DateTime TanggalLahir, string KodeProdi, byte[] Foto)
-        {
-            try
-            {
-                conn.Open();
-                cmd = new SqlCommand("sp_InsertMahasiswa", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@pNIM", NIM);
-                cmd.Parameters.AddWithValue("@pNama", Nama);
-                cmd.Parameters.AddWithValue("@pAlamat", Alamat);
-                cmd.Parameters.AddWithValue("@pJenisKelamin", JenisKelamin);
-                cmd.Parameters.AddWithValue("@pTanggalLahir", TanggalLahir);
-                cmd.Parameters.AddWithValue("@pKodeProdi", KodeProdi);
-
-                if (Foto != null)
-                    cmd.Parameters.AddWithValue("@pFoto", Foto);
-                else
-                    cmd.Parameters.AddWithValue("@pFoto", DBNull.Value);
-
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            finally
-            {
-                conn.Close();
-            }
-        }
-
-        // Fungsi Update (Gambar 4)
-        public void UpdateMhs(string NIM, string Nama, string Alamat, string JenisKelamin, DateTime TanggalLahir, string KodeProdi, byte[] Foto)
-        {
-            try
-            {
-                conn.Open();
-                cmd = new SqlCommand("sp_UpdateMahasiswa", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@pNIM", NIM);
-                cmd.Parameters.AddWithValue("@pNama", Nama);
-                cmd.Parameters.AddWithValue("@pAlamat", Alamat);
-                cmd.Parameters.AddWithValue("@pJenisKelamin", JenisKelamin);
-                cmd.Parameters.AddWithValue("@pTanggalLahir", TanggalLahir);
-                cmd.Parameters.AddWithValue("@pKodeProdi", KodeProdi);
-
-                if (Foto != null)
-                    cmd.Parameters.AddWithValue("@pFoto", Foto);
-                else
-                    cmd.Parameters.AddWithValue("@pFoto", DBNull.Value);
-
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            finally
-            {
-                conn.Close();
-            }
-        }
-
-        // Fungsi Delete (Sesuai alur, Anda akan butuh ini)
-        public void DeleteMhs(string NIM)
-        {
-            try
-            {
-                conn.Open();
-                cmd = new SqlCommand("sp_DeleteMahasiswa", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@pNIM", NIM);
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            finally
-            {
-                conn.Close();
-            }
-        }
-
-        // Fungsi Dashboard (Gambar 5)
+        // ============================================
+        // METHOD UNTUK DASHBOARD
+        // ============================================
         public DataSet Dashboard()
         {
-            ds = new DataSet();
+            DataSet ds = new DataSet();
             try
             {
-                conn.Open();
-                cmd = new SqlCommand("sp_Dashboard", conn);
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                SqlCommand cmd = new SqlCommand("sp_DashBoard", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
                 da = new SqlDataAdapter(cmd);
                 da.Fill(ds, "Dashboard");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString());
+                throw ex;
             }
             finally
             {
-                conn.Close();
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
             }
             return ds;
         }
 
-        // Fungsi DashboardByTahun (Gambar 6)
-        public DataSet DashboardByTahun(string Tahun)
+        public DataSet DashboardByTahun(string tahun)
         {
-            ds = new DataSet();
+            DataSet ds = new DataSet();
             try
             {
-                conn.Open();
-                cmd = new SqlCommand("sp_DashboardByTahun", conn);
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                SqlCommand cmd = new SqlCommand("sp_DashBoardByTahun", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@inTglMsuk", Tahun);
+                cmd.Parameters.AddWithValue("@intgLmsuk", tahun);
                 da = new SqlDataAdapter(cmd);
                 da.Fill(ds, "Dashboard");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString());
+                throw ex;
             }
             finally
             {
-                conn.Close();
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
             }
             return ds;
+        }
+
+        // ============================================
+        // METHOD CRUD MAHASISWA
+        // ============================================
+        public DataTable GetMhsByNIM(string nim)
+        {
+            DataTable dt = new DataTable();
+            try
+            {
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                SqlCommand cmd = new SqlCommand("sp_GetMahasiswaByNIM", conn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@pNIM", nim);
+                da = new SqlDataAdapter(cmd);
+                da.Fill(dt);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
+            }
+            return dt;
+        }
+
+        public void DeleteMhs(string nim)
+        {
+            try
+            {
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                string query = "DELETE FROM Mahasiswa WHERE NIM = @NIM";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@NIM", nim);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
+            }
+        }
+
+        public void resetData()
+        {
+            try
+            {
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                string query = @"
+                    IF OBJECT_ID('dbo.Mahasiswa_Backup') IS NOT NULL
+                    BEGIN
+                        DELETE FROM dbo.Mahasiswa;
+                        INSERT INTO dbo.Mahasiswa
+                        SELECT * FROM dbo.Mahasiswa_Backup;
+                    END";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
+            }
+        }
+
+        public void InsertLog(string message)
+        {
+            try
+            {
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                string query = "INSERT INTO LogError (waktu, pesan_error) VALUES (GETDATE(), @pesan)";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@pesan", message);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
+            }
+        }
+
+        public void simpanLog(string message)
+        {
+            InsertLog(message);
+        }
+
+        public void testInject(string nim)
+        {
+            try
+            {
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                string query = "UPDATE Mahasiswa SET Nama = 'HACKED' WHERE NIM = '" + nim + "'";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
+            }
+        }
+
+        public int CountMahasiswa()
+        {
+            int total = 0;
+            try
+            {
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
+
+                string query = "SELECT COUNT(*) FROM Mahasiswa";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                total = Convert.ToInt32(cmd.ExecuteScalar());
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                    conn.Close();
+            }
+            return total;
         }
     }
 }
