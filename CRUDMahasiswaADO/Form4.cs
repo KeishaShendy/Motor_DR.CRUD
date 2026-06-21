@@ -7,9 +7,8 @@ namespace CRUDMahasiswaADO
 {
     public partial class FrmDashboard : Form
     {
-        // Memanggil class DAL yang Anda kirimkan
-        DAL dbLogic = new DAL();
-        int button = 0;
+        private DAL dbLogic = new DAL();
+        private int button = 0;
 
         public FrmDashboard()
         {
@@ -18,25 +17,29 @@ namespace CRUDMahasiswaADO
 
         private void FrmDashboard_Load(object sender, EventArgs e)
         {
+            // SETUP TAHUN MASUK
             dtpTahunMasuk.Format = DateTimePickerFormat.Custom;
             dtpTahunMasuk.CustomFormat = "yyyy";
             dtpTahunMasuk.ShowUpDown = true;
+            dtpTahunMasuk.Enabled = false;
 
+            // SETUP FILTER
             cboFilter.Items.Clear();
             cboFilter.Items.Add("Keseluruhan");
             cboFilter.Items.Add("Berdasarkan Tahun");
             cboFilter.SelectedIndex = 0;
 
-            loadDataChart();
+            LoadDataChart();
         }
 
-        public void loadDataChart()
+        public void LoadDataChart()
         {
             chartMahasiswa.Series.Clear();
             chartMahasiswa.Titles.Clear();
             chartMahasiswa.Legends.Clear();
             chartMahasiswa.ChartAreas.Clear();
 
+            // SETUP CHART AREA
             ChartArea ca = new ChartArea("MainArea");
             ca.AxisX.Title = "Program Studi";
             ca.AxisY.Title = "Jumlah Mahasiswa";
@@ -45,7 +48,6 @@ namespace CRUDMahasiswaADO
 
             try
             {
-                // Mengambil data dari DAL (mengembalikan DataSet)
                 DataSet ds;
                 if (button == 1)
                 {
@@ -56,10 +58,9 @@ namespace CRUDMahasiswaADO
                     ds = dbLogic.Dashboard();
                 }
 
-                // Mengambil DataTable dari DataSet dengan nama tabel "Dashboard"
-                if (ds != null && ds.Tables["Dashboard"].Rows.Count > 0)
+                if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
                 {
-                    DataTable dt = ds.Tables["Dashboard"];
+                    DataTable dt = ds.Tables[0];
 
                     Series s = new Series("Mahasiswa");
                     s.ChartType = SeriesChartType.Column;
@@ -67,33 +68,37 @@ namespace CRUDMahasiswaADO
                     foreach (DataRow row in dt.Rows)
                     {
                         string prodi = row["NamaProdi"].ToString();
-                        // Pastikan nama kolom di SQL sesuai dengan yang di bawah (JmlMhs)
                         int jumlah = Convert.ToInt32(row["JmlMhs"]);
                         s.Points.AddXY(prodi, jumlah);
                     }
+
                     chartMahasiswa.Series.Add(s);
                 }
                 else
                 {
-                    MessageBox.Show("Tidak ada data untuk ditampilkan.");
+                    Series s = new Series("Mahasiswa");
+                    s.ChartType = SeriesChartType.Column;
+                    s.Points.AddXY("Tidak Ada Data", 0);
+                    chartMahasiswa.Series.Add(s);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Gagal load data: " + ex.Message);
+                MessageBox.Show("Gagal load data: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btn_Load_Click(object sender, EventArgs e)
         {
             button = 1;
-            loadDataChart();
+            LoadDataChart();
         }
 
         private void btn_Reset_Click(object sender, EventArgs e)
         {
             button = 0;
-            loadDataChart();
+            LoadDataChart();
         }
 
         private void btn_DataMahasiswa_Click(object sender, EventArgs e)
@@ -105,30 +110,24 @@ namespace CRUDMahasiswaADO
 
         private void cbo_Filter_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (cboFilter.SelectedIndex == 0) // Keseluruhan
+            if (cboFilter.SelectedIndex == 0)
             {
                 dtpTahunMasuk.Enabled = false;
                 btnLoad.Enabled = false;
                 button = 0;
-                loadDataChart();
+                LoadDataChart();
             }
-            else if (cboFilter.SelectedIndex == 1) // Berdasarkan Tahun
+            else if (cboFilter.SelectedIndex == 1)
             {
                 dtpTahunMasuk.Enabled = true;
                 btnLoad.Enabled = true;
                 button = 1;
-                loadDataChart();
+                LoadDataChart();
             }
         }
 
-        private void dtp_TahunMasuk_ValueChanged(object sender, EventArgs e)
-        {
-            // Kosong - event handler untuk DateTimePicker
-        }
+        private void dtp_TahunMasuk_ValueChanged(object sender, EventArgs e) { }
 
-        private void chartMahasiswa_Click(object sender, EventArgs e)
-        {
-            // Kosong - event handler untuk Chart
-        }
+        private void chartMahasiswa_Click(object sender, EventArgs e) { }
     }
 }
