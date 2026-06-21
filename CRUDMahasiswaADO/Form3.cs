@@ -7,52 +7,51 @@ namespace CRUDMahasiswaADO
 {
     public partial class frmRekapMahasiswa_Load : Form
     {
-        // Connection string disesuaikan dengan laptopmu
-        static string connectionString = "Data Source=LAPTOP-MBD0B33T\\SHENDY;Initial Catalog=DBAkademikADO;User ID=sa;Password=Password123";
-
-        SqlConnection conn = new SqlConnection(connectionString);
-        SqlDataAdapter da;
-        DataTable dtMahasiswa;
-        DataTable dtProdi;
+        private string connectionString =
+            "Data Source=LAPTOP-MBD0B33T\\SHENDY;Initial Catalog=DBAkademikADO;User ID=sa;Password=Password123";
+        private SqlConnection conn;
+        private SqlDataAdapter da;
+        private DataTable dtMahasiswa;
+        private DataTable dtProdi;
 
         public frmRekapMahasiswa_Load()
         {
             InitializeComponent();
+            conn = new SqlConnection(connectionString);
         }
 
         private void frmRekapMahasiswa_Load_Load(object sender, EventArgs e)
         {
-            // Pengaturan Tahun Masuk (Hanya menampilkan Tahun)
+            // SETUP TAHUN MASUK
             dtpTahunMasuk.Format = DateTimePickerFormat.Custom;
             dtpTahunMasuk.CustomFormat = "yyyy";
             dtpTahunMasuk.ShowUpDown = true;
             dtpTahunMasuk.MinDate = new DateTime(2000, 1, 1);
             dtpTahunMasuk.MaxDate = DateTime.Now;
+            dtpTahunMasuk.Value = DateTime.Now;
 
+            // SETUP COMBOBOX
             cmbProdi.DropDownStyle = ComboBoxStyle.DropDownList;
-            btnCetak.Enabled = false; // Tombol cetak dimatikan sebelum data di-load 
+            btnCetak.Enabled = false;
 
             try
             {
                 if (conn.State == ConnectionState.Closed)
-                {
                     conn.Open();
-                }
 
-                // Load data Prodi ke ComboBox
-                SqlCommand cmd = new SqlCommand("select namaprodi from programstudi", conn);
-                cmd.CommandType = CommandType.Text;
+                SqlCommand cmd = new SqlCommand("SELECT NamaProdi FROM ProgramStudi", conn);
                 dtProdi = new DataTable();
                 da = new SqlDataAdapter(cmd);
                 da.Fill(dtProdi);
 
                 cmbProdi.DataSource = dtProdi;
-                cmbProdi.DisplayMember = "namaprodi";
-                cmbProdi.ValueMember = "namaprodi";
+                cmbProdi.DisplayMember = "NamaProdi";
+                cmbProdi.ValueMember = "NamaProdi";
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Gagal Load data prodi: " + ex.Message);
+                MessageBox.Show("Gagal Load data prodi: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -61,16 +60,13 @@ namespace CRUDMahasiswaADO
             try
             {
                 if (conn.State == ConnectionState.Closed)
-                {
                     conn.Open();
-                }
 
                 SqlCommand cmd = new SqlCommand("sp_Report", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
 
-                // Menambahkan parameter Stored Procedure
-                cmd.Parameters.Add("@inProdi", SqlDbType.VarChar, 50).Value = cmbProdi.SelectedValue;
-                cmd.Parameters.Add("@inTglMsuk", SqlDbType.VarChar, 4).Value = dtpTahunMasuk.Value.Year.ToString();
+                cmd.Parameters.AddWithValue("@inProdi", cmbProdi.SelectedValue.ToString());
+                cmd.Parameters.AddWithValue("@inTglMsuk", dtpTahunMasuk.Value.Year.ToString());
 
                 da = new SqlDataAdapter(cmd);
                 dtMahasiswa = new DataTable();
@@ -78,7 +74,6 @@ namespace CRUDMahasiswaADO
 
                 dgvMahasiswa.DataSource = dtMahasiswa;
 
-                // Validasi: tombol cetak aktif jika data ditemukan
                 if (dtMahasiswa.Rows.Count > 0)
                 {
                     btnCetak.Enabled = true;
@@ -86,18 +81,19 @@ namespace CRUDMahasiswaADO
                 else
                 {
                     btnCetak.Enabled = false;
-                    MessageBox.Show("Data tidak ditemukan untuk prodi dan tahun tersebut.");
+                    MessageBox.Show("Data tidak ditemukan untuk prodi dan tahun tersebut.", "Info",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Gagal Load data: " + ex.Message);
+                MessageBox.Show("Gagal Load data: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnCetak_Click(object sender, EventArgs e)
         {
-            // BAGIAN PALING PENTING: Mengirim parameter Prodi & Tahun ke Form2
             Form2 frmReport = new Form2(cmbProdi.SelectedValue.ToString(), dtpTahunMasuk.Value);
             frmReport.Show();
         }
